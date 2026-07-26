@@ -320,6 +320,17 @@
       #panelOverlay {
         display: none;
       }
+      #panelFooter {
+        margin-top: auto;
+        padding-top: 12px;
+        border-top: 1px solid hsl(var(--border));
+        font-size: 12px;
+        color: hsl(var(--muted-foreground));
+        text-align: center;
+      }
+      #panelFooter a {
+        color: inherit;
+      }
 
       @media (max-width: 768px) {
         #map {
@@ -430,7 +441,8 @@
               >모집공고 및 입주신청</a
             ><br />
             <span id="asOf"></span><br />
-            <span id="collectedAt"></span>
+            <span id="subscriptionPeriod"></span><br />
+            <span id="collectedAt"></span><br />
           </div>
         </div>
         <button id="panelClose" aria-label="필터 메뉴 닫기">×</button>
@@ -565,6 +577,13 @@
           위치로 표시된 매물이 있습니다. 정확한 위치는 팝업의 주소를 확인하세요.
         </div>
       </fieldset>
+      <div id="panelFooter">
+        ⓒ 2026
+        <a href="https://devstory.co.kr" target="_blank" rel="noopener"
+          >DevStory</a
+        >
+        All rights reserved.
+      </div>
     </div>
 
     <script>
@@ -7489,8 +7508,19 @@
       updateFavCount();
 
       document.getElementById("asOf").textContent = "공고일: 2026-07-24";
+      const collectedAtLocal = new Date();
+      const collectedAtStr = `${collectedAtLocal.getFullYear()}-${String(
+        collectedAtLocal.getMonth() + 1,
+      ).padStart(2, "0")}-${String(collectedAtLocal.getDate()).padStart(
+        2,
+        "0",
+      )} ${String(collectedAtLocal.getHours()).padStart(2, "0")}:${String(
+        collectedAtLocal.getMinutes(),
+      ).padStart(2, "0")}`;
       document.getElementById("collectedAt").textContent =
-        "신청자 수 기준: 2026-07-26";
+        `업데이트 시각: ${collectedAtStr}`;
+      document.getElementById("subscriptionPeriod").textContent =
+        "청약 기간: 2026-07-24 10시 ~ 2026-08-07 17시";
 
       updateStats(DATA.listings.length);
     </script>
