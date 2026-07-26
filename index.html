@@ -2,17 +2,23 @@
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
-    <meta name="naver-site-verification" content="7dbea9ed4d2406e51d5da949ad8a4615fc1a3768" />
+    <meta
+      name="naver-site-verification"
+      content="7dbea9ed4d2406e51d5da949ad8a4615fc1a3768"
+    />
     <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-6N90VS8DZN"></script>
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=G-6N90VS8DZN"
+    ></script>
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag() {
         dataLayer.push(arguments);
       }
-      gtag('js', new Date());
+      gtag("js", new Date());
 
-      gtag('config', 'G-6N90VS8DZN');
+      gtag("config", "G-6N90VS8DZN");
     </script>
     <title>HUG 든든전세주택 지도 | 매물 지도 검색</title>
     <link
@@ -216,6 +222,10 @@
         border-radius: var(--radius);
         overflow: hidden;
         box-shadow: 0 4px 12px rgb(0 0 0 / 0.08);
+      }
+      /* 카카오맵 InfoWindow 기본 파란 테두리 제거 */
+      #map div[style*="border: 1px solid rgb(118, 129, 168)"] {
+        border: none !important;
       }
       .popup-title {
         font-weight: 700;
@@ -7231,6 +7241,15 @@
 
       const colors = DATA.colors;
       const markers = [];
+      const BADGE_ZOOM_LEVEL = 8;
+      let zoomOk = map.getLevel() <= BADGE_ZOOM_LEVEL;
+      function refreshMarkerImage(m) {
+        m.setImage(zoomOk ? m._badgeImage : m._plainImage);
+      }
+      kakao.maps.event.addListener(map, "zoom_changed", () => {
+        zoomOk = map.getLevel() <= BADGE_ZOOM_LEVEL;
+        markers.forEach(refreshMarkerImage);
+      });
       const infowindow = new kakao.maps.InfoWindow({
         zIndex: 1,
         removable: false,
@@ -7276,24 +7295,36 @@
         applyFilters();
       }
 
-      function circleMarkerImage(color) {
+      function circleMarkerImage(color, applicants) {
+        const w = 56,
+          h = 38,
+          cx = 28,
+          cy = 12;
+        const label = applicants
+          ? `<text x="${cx}" y="${cy + 22}" text-anchor="middle" font-family="sans-serif" font-size="12" font-weight="700" fill="#000" stroke="#fff" stroke-width="3" stroke-linejoin="round" paint-order="stroke">${applicants}명</text>`
+          : "";
         const svg =
-          `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24">` +
-          `<circle cx="12" cy="12" r="9" fill="#222"/>` +
-          `<circle cx="12" cy="12" r="7.5" fill="${color}" stroke="#fff" stroke-width="1.5"/></svg>`;
+          `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}">` +
+          label +
+          `<circle cx="${cx}" cy="${cy}" r="9" fill="#222"/>` +
+          `<circle cx="${cx}" cy="${cy}" r="7.5" fill="${color}" stroke="#fff" stroke-width="1.5"/></svg>`;
         return new kakao.maps.MarkerImage(
-          "data:image/svg+xml;base64," + btoa(svg),
-          new kakao.maps.Size(24, 24),
-          { offset: new kakao.maps.Point(12, 12) },
+          "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg),
+          new kakao.maps.Size(w, h),
+          { offset: new kakao.maps.Point(cx, cy) },
         );
       }
 
       DATA.listings.forEach((item) => {
         const color = colors[item.house_type] || "#555";
+        const plainImage = circleMarkerImage(color);
+        const badgeImage = circleMarkerImage(color, item.applicants);
         const marker = new kakao.maps.Marker({
           position: new kakao.maps.LatLng(item.lat, item.lon),
-          image: circleMarkerImage(color),
+          image: zoomOk ? badgeImage : plainImage,
         });
+        marker._plainImage = plainImage;
+        marker._badgeImage = badgeImage;
         const precLabel = {
           lot: "지번(정확)",
           dong: "동 단위(근사)",
@@ -7321,10 +7352,11 @@
     </div>
   </div>`;
         };
-        kakao.maps.event.addListener(marker, "click", () => {
+        const openPopup = () => {
           infowindow.setContent(buildContent());
           infowindow.open(map, marker);
-        });
+        };
+        kakao.maps.event.addListener(marker, "click", openPopup);
         marker._meta = item;
         marker.setMap(map);
         markers.push(marker);
