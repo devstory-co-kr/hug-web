@@ -259,6 +259,7 @@
       }
       .iw-content.has-floorplan .iw-info {
         flex: 0 0 248px;
+        order: 1;
       }
       .iw-plan {
         position: relative;
@@ -272,6 +273,42 @@
         height: 100%;
         aspect-ratio: auto;
         margin-bottom: 0;
+      }
+      .iw-roadview {
+        position: relative;
+        flex: 1 1 400px;
+        min-width: 360px;
+        order: -2;
+      }
+      .iw-roadview .iw-roadview-inner {
+        position: absolute;
+        inset: 0;
+        border: 1px solid hsl(var(--border));
+        border-radius: calc(var(--radius) - 4px);
+        overflow: hidden;
+        background: hsl(var(--secondary));
+        cursor: zoom-in;
+      }
+      .iw-roadview-placeholder {
+        position: absolute;
+        inset: 0;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        color: hsl(var(--muted-foreground));
+        text-align: center;
+        padding: 8px;
+      }
+      .iw-content.has-roadview {
+        max-width: 700px;
+      }
+      .iw-content.has-roadview .iw-info {
+        flex: 0 0 248px;
+        order: 1;
+      }
+      .iw-content.has-floorplan.has-roadview {
+        max-width: 940px;
       }
       #floorplanOverlay {
         position: fixed;
@@ -292,6 +329,74 @@
         object-fit: contain;
         background: #fff;
         border-radius: var(--radius);
+      }
+      #roadviewOverlay {
+        position: fixed;
+        inset: 0;
+        z-index: 10000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        background: rgb(0 0 0 / 0.75);
+      }
+      #roadviewOverlay.open {
+        display: flex;
+      }
+      #roadviewOverlay .roadview-box {
+        position: relative;
+        width: 70vw;
+        height: 70vh;
+        background: #fff;
+        border-radius: var(--radius);
+        overflow: hidden;
+      }
+      #roadviewContainer {
+        width: 100%;
+        height: 100%;
+      }
+      #roadviewClose {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        z-index: 1;
+        width: 30px;
+        height: 30px;
+        border: none;
+        border-radius: 50%;
+        background: rgb(0 0 0 / 0.6);
+        color: #fff;
+        font-size: 16px;
+        line-height: 1;
+        cursor: pointer;
+      }
+      #roadviewAddr {
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        z-index: 1;
+        max-width: calc(100% - 50px);
+        padding: 6px 10px;
+        border-radius: calc(var(--radius) - 4px);
+        background: rgb(0 0 0 / 0.6);
+        color: #fff;
+        font-size: 12.5px;
+        font-weight: 600;
+      }
+      @media (max-width: 768px) {
+        #roadviewOverlay .roadview-box {
+          width: 100vw;
+          height: 100vh;
+          border-radius: 0;
+        }
+      }
+      #roadviewNotFound {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+        color: hsl(var(--muted-foreground));
+        font-size: 13px;
       }
       .popup-body {
         display: flex;
@@ -333,6 +438,7 @@
         text-decoration: none;
         border-radius: calc(var(--radius) - 4px);
         padding: 9px 0;
+        margin-top: 6px;
         transition: opacity 0.15s;
       }
       .popup-link:hover {
@@ -346,7 +452,6 @@
         gap: 6px;
         margin-top: 6px;
       }
-      .roadview-btn,
       .navermap-btn {
         flex: 1;
         display: block;
@@ -357,24 +462,33 @@
         border-radius: calc(var(--radius) - 4px);
         padding: 9px 0;
         transition: opacity 0.15s;
-      }
-      .roadview-btn {
-        color: #3c1e1e;
-        background: #fee500;
-      }
-      .roadview-btn:hover {
-        opacity: 0.88;
-      }
-      .navermap-btn {
         color: #fff;
         background: #03c75a;
       }
       .navermap-btn:hover {
         opacity: 0.88;
       }
+      .roadview-btn-mobile {
+        display: none;
+        flex: 1;
+        text-align: center;
+        font-size: 12.5px;
+        font-weight: 600;
+        border: none;
+        font: inherit;
+        cursor: pointer;
+        border-radius: calc(var(--radius) - 4px);
+        padding: 9px 0;
+        transition: opacity 0.15s;
+        color: #3c1e1e;
+        background: #fee500;
+      }
+      .roadview-btn-mobile:hover {
+        opacity: 0.88;
+      }
       .fav-btn {
         display: block;
-        width: 100%;
+        flex: 1;
         text-align: center;
         font-size: 12.5px;
         font-weight: 600;
@@ -384,7 +498,6 @@
         border-radius: calc(var(--radius) - 4px);
         padding: 9px 0;
         cursor: pointer;
-        margin-bottom: 6px;
         transition: background 0.15s;
       }
       .fav-btn:hover {
@@ -601,6 +714,20 @@
           aspect-ratio: 1 / 1;
           margin-bottom: 10px;
         }
+        /* 모바일에서는 로드뷰를 자동으로 띄우지 않고, 버튼으로만 보여준다 */
+        .iw-content.has-roadview,
+        .iw-content.has-floorplan.has-roadview {
+          max-width: 280px;
+        }
+        .iw-content.has-roadview .iw-info {
+          flex: none;
+        }
+        .iw-roadview {
+          display: none;
+        }
+        .roadview-btn-mobile {
+          display: block;
+        }
         #menuToggle {
           display: flex;
           align-items: center;
@@ -697,6 +824,14 @@
     <div id="map"></div>
     <div id="floorplanOverlay" onclick="closeFloorplan()">
       <img alt="내부 구조 도면 확대 이미지" />
+    </div>
+    <div id="roadviewOverlay" onclick="if (event.target === this) closeRoadview()">
+      <div class="roadview-box">
+        <button id="roadviewClose" aria-label="로드뷰 닫기" onclick="closeRoadview()">✕</button>
+        <div id="roadviewAddr"></div>
+        <div id="roadviewContainer"></div>
+        <div id="roadviewNotFound">이 위치는 로드뷰를 지원하지 않습니다.</div>
+      </div>
     </div>
     <button id="menuToggle" aria-label="필터 메뉴 열기">☰</button>
     <button id="listViewToggle" aria-label="리스트로 보기">📋 리스트로 보기</button>
@@ -950,8 +1085,75 @@
       function closeFloorplan() {
         document.getElementById("floorplanOverlay").classList.remove("open");
       }
+
+      let roadview = null;
+      const roadviewClient = new kakao.maps.RoadviewClient();
+      function openRoadview(lat, lon, addr) {
+        document.getElementById("roadviewAddr").textContent = addr
+          ? decodeURIComponent(addr)
+          : "";
+        const position = new kakao.maps.LatLng(lat, lon);
+        roadviewClient.getNearestPanoId(position, 50, (panoId) => {
+          const notFound = document.getElementById("roadviewNotFound");
+          const container = document.getElementById("roadviewContainer");
+          if (panoId === null) {
+            container.style.display = "none";
+            notFound.style.display = "flex";
+          } else {
+            container.style.display = "block";
+            notFound.style.display = "none";
+            if (!roadview) roadview = new kakao.maps.Roadview(container);
+            roadview.setPanoId(panoId, position);
+          }
+          document.getElementById("roadviewOverlay").classList.add("open");
+        });
+      }
+      function closeRoadview() {
+        document.getElementById("roadviewOverlay").classList.remove("open");
+      }
+      let inlineRoadview = null;
+      const DRAG_CLICK_THRESHOLD = 6;
+      function bindRoadviewClickVsDrag(container, onClick) {
+        let downX = 0;
+        let downY = 0;
+        container.addEventListener("pointerdown", (e) => {
+          downX = e.clientX;
+          downY = e.clientY;
+        });
+        container.addEventListener("pointerup", (e) => {
+          const dist = Math.hypot(e.clientX - downX, e.clientY - downY);
+          if (dist <= DRAG_CLICK_THRESHOLD) onClick();
+        });
+      }
+      function initInlineRoadview(item) {
+        if (window.matchMedia("(max-width: 768px)").matches) return;
+        const container = document.getElementById("iwRoadviewContainer");
+        if (!container) return;
+        const placeholder = document.getElementById("iwRoadviewPlaceholder");
+        bindRoadviewClickVsDrag(container, () =>
+          openRoadview(item.lat, item.lon, encodeURIComponent(item.addr)),
+        );
+        const position = new kakao.maps.LatLng(item.lat, item.lon);
+        roadviewClient.getNearestPanoId(position, 50, (panoId) => {
+          const c = document.getElementById("iwRoadviewContainer");
+          if (!c) return;
+          const p = document.getElementById("iwRoadviewPlaceholder");
+          if (panoId === null) {
+            c.style.display = "none";
+            if (p) p.style.display = "flex";
+          } else {
+            c.style.display = "block";
+            if (p) p.style.display = "none";
+            inlineRoadview = new kakao.maps.Roadview(c);
+            inlineRoadview.setPanoId(panoId, position);
+          }
+        });
+      }
       document.addEventListener("keydown", (e) => {
-        if (e.key === "Escape") closeFloorplan();
+        if (e.key === "Escape") {
+          closeFloorplan();
+          closeRoadview();
+        }
       });
 
       const FAVORITES_KEY = "hugFavorites";
@@ -1022,7 +1224,7 @@
         }[item.geo_precision];
         const buildContent = () => {
           const isFav = favorites.has(item.detail_url);
-          return `<div class="iw-content${item.floorplan ? " has-floorplan" : ""}">
+          return `<div class="iw-content has-roadview${item.floorplan ? " has-floorplan" : ""}">
     <div class="popup-title" data-addr="${encodeURIComponent(item.addr)}" onclick="copyAddress(this)" title="클릭하여 주소 복사">${item.addr}</div>
     <div class="iw-cols">
     <div class="iw-info">
@@ -1037,20 +1239,25 @@
       <div class="popup-row"><span>공고일</span><b>${item.date}</b></div>
     </div>
     <div class="precision-note">위치 정확도: ${precLabel} <span class="badge">${item.sido} ${item.gugun.split(" ").slice(1).join(" ")}</span></div>
-    <button type="button" class="fav-btn${isFav ? " active" : ""}" data-url="${encodeURIComponent(item.detail_url)}" onclick="toggleFavorite(this)">${isFav ? "★ 즐겨찾기 해제" : "☆ 즐겨찾기 추가"}</button>
-    <a class="popup-link" href="${item.detail_url}" target="_blank" rel="noopener">입주 신청하기</a>
     <div class="map-links">
+      <button type="button" class="fav-btn${isFav ? " active" : ""}" data-url="${encodeURIComponent(item.detail_url)}" onclick="toggleFavorite(this)">${isFav ? "★ 즐겨찾기 해제" : "☆ 즐겨찾기 추가"}</button>
       <a class="navermap-btn" href="https://map.naver.com/p/search/${encodeURIComponent(item.addr)}" target="_blank" rel="noopener">네이버 지도</a>
-      <a class="roadview-btn" href="https://map.kakao.com/link/roadview/${item.lat},${item.lon}" target="_blank" rel="noopener">카카오 로드뷰 보기</a>
+      <button type="button" class="roadview-btn-mobile" onclick="openRoadview(${item.lat}, ${item.lon}, '${encodeURIComponent(item.addr)}')">카카오 로드뷰</button>
     </div>
+    <a class="popup-link" href="${item.detail_url}" target="_blank" rel="noopener">입주 신청하기</a>
     </div>
     ${item.floorplan ? `<div class="iw-plan"><img class="popup-floorplan" src="${item.floorplan}" alt="내부 구조 도면" title="클릭하여 확대" loading="lazy" onclick="openFloorplan(this.src)"></div>` : ""}
+    <div class="iw-roadview">
+      <div class="iw-roadview-inner" id="iwRoadviewContainer" title="클릭하여 크게 보기"></div>
+      <div class="iw-roadview-placeholder" id="iwRoadviewPlaceholder">로드뷰 없음</div>
+    </div>
     </div>
   </div>`;
         };
         const openPopup = () => {
           infowindow.setContent(buildContent());
           infowindow.open(map, marker);
+          initInlineRoadview(item);
         };
         kakao.maps.event.addListener(marker, "click", openPopup);
         marker._meta = item;
@@ -1065,7 +1272,8 @@
       document.addEventListener("click", (e) => {
         if (
           !document.getElementById("map").contains(e.target) &&
-          !e.target.closest("#floorplanOverlay")
+          !e.target.closest("#floorplanOverlay") &&
+          !e.target.closest("#roadviewOverlay")
         )
           infowindow.close();
       });
