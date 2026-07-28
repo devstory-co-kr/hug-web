@@ -109,13 +109,33 @@
         right: 0;
         width: 340px;
         height: 100%;
-        overflow-y: auto;
+        overflow: hidden;
         background: hsl(var(--background));
         border-left: 1px solid hsl(var(--border));
-        padding: 16px;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+      }
+      #panelScroll {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        padding: 16px 16px 64px;
         display: flex;
         flex-direction: column;
         gap: 12px;
+      }
+      #panelTop {
+        position: sticky;
+        top: -16px;
+        margin: -16px -16px 0;
+        padding: 16px 16px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        background: hsl(var(--background));
+        border-bottom: 1px solid hsl(var(--border));
+        z-index: 1;
       }
       #panelHandle {
         display: flex;
@@ -486,6 +506,9 @@
       .roadview-btn-mobile:hover {
         opacity: 0.88;
       }
+      .star-icon {
+        vertical-align: -2px;
+      }
       .fav-btn {
         display: block;
         flex: 1;
@@ -515,8 +538,8 @@
         display: none;
       }
       #panelFooter {
-        margin-top: auto;
-        padding-top: 12px;
+        flex-shrink: 0;
+        padding: 12px 16px;
         border-top: 1px solid hsl(var(--border));
         font-size: 12px;
         color: hsl(var(--muted-foreground));
@@ -658,6 +681,28 @@
       #listTable tbody tr:hover {
         background: hsl(var(--secondary));
       }
+      .list-fav-btn {
+        display: block;
+        width: 28px;
+        height: 28px;
+        line-height: 26px;
+        text-align: center;
+        font-size: 15px;
+        border: 1px solid hsl(var(--border));
+        background: hsl(var(--background));
+        color: hsl(var(--foreground));
+        border-radius: calc(var(--radius) - 4px);
+        cursor: pointer;
+        transition: background 0.15s;
+      }
+      .list-fav-btn:hover {
+        background: hsl(var(--secondary));
+      }
+      .list-fav-btn.active {
+        background: #fff7e0;
+        border-color: #f5c518;
+        color: #a67c00;
+      }
       .list-thumb {
         display: block;
         width: 44px;
@@ -779,18 +824,6 @@
         #panel.open {
           transform: translateX(0);
         }
-        #panelHandle {
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-          gap: 8px;
-          position: sticky;
-          top: -16px;
-          margin: -16px -16px 0;
-          padding: 16px 16px 6px;
-          background: hsl(var(--background));
-          z-index: 1;
-        }
         #panelClose {
           display: flex;
           align-items: center;
@@ -847,6 +880,7 @@
             <thead>
               <tr>
                 <th></th>
+                <th></th>
                 <th class="sortable" data-key="addr">주소</th>
                 <th class="sortable" data-key="house_type">유형</th>
                 <th class="sortable" data-key="pyeong">평수</th>
@@ -863,6 +897,8 @@
     </div>
     <div id="panelOverlay"></div>
     <div id="panel">
+      <div id="panelScroll">
+      <div id="panelTop">
       <div id="panelHandle">
         <div id="panelHeader">
           <h1>HUG 든든전세주택 지도</h1>
@@ -888,6 +924,7 @@
         <button id="panelClose" aria-label="필터 메뉴 닫기">×</button>
       </div>
       <div id="stats"></div>
+      </div>
       <fieldset>
         <legend>시/도</legend>
         <div id="sidoFilters"></div>
@@ -987,7 +1024,7 @@
           />
           <span>년</span>
         </div>
-        <div class="precision-note">
+        <div class="precision-note" style="margin-top: 6px">
           ※ 준공연도 정보가 없는 매물은 값을 설정해도 항상 표시됩니다.
         </div>
       </fieldset>
@@ -997,7 +1034,7 @@
           ><input type="checkbox" id="topFloorFilter" /> 꼭대기층만 보기
           <span class="count" id="c-top"></span
         ></label>
-        <div class="precision-note">
+        <div class="precision-note" style="margin-top: 6px">
           ※ 층수 정보를 확인하지 못한 매물은 이 필터를 켜면 제외됩니다.
         </div>
       </fieldset>
@@ -1027,6 +1064,7 @@
           위치로 표시된 매물이 있습니다. 정확한 위치는 팝업의 주소를 확인하세요.
         </div>
       </fieldset>
+      </div>
       <div id="panelFooter">
         ⓒ 2026
         <a href="https://devstory.co.kr" target="_blank" rel="noopener"
@@ -1173,21 +1211,59 @@
       }
       function toggleFavorite(el) {
         const url = decodeURIComponent(el.dataset.url);
-        if (favorites.has(url)) {
-          favorites.delete(url);
-          el.textContent = "☆ 즐겨찾기 추가";
-          el.classList.remove("active");
-        } else {
-          favorites.add(url);
-          el.textContent = "★ 즐겨찾기 해제";
-          el.classList.add("active");
-        }
+        const willFav = !favorites.has(url);
+        if (willFav) favorites.add(url);
+        else favorites.delete(url);
+        el.classList.toggle("active", willFav);
+        el.innerHTML = el.classList.contains("list-fav-btn")
+          ? starIconSvg(willFav)
+          : `${starIconSvg(willFav)} ${willFav ? "즐겨찾기 해제" : "즐겨찾기 추가"}`;
         saveFavorites();
         updateFavCount();
+        const marker = markerByUrl.get(url);
+        if (marker) refreshMarkerFavImage(marker);
         applyFilters();
       }
 
-      function circleMarkerImage(color, applicants) {
+      function roundedStarPath(cx, cy, outerR, innerR, roundness) {
+        const pts = [];
+        for (let i = 0; i < 10; i++) {
+          const r = i % 2 === 0 ? outerR : innerR;
+          const angle = (Math.PI / 5) * i - Math.PI / 2;
+          pts.push([cx + r * Math.cos(angle), cy + r * Math.sin(angle)]);
+        }
+        const n = pts.length;
+        let d = "";
+        for (let i = 0; i < n; i++) {
+          const prev = pts[(i - 1 + n) % n];
+          const curr = pts[i];
+          const next = pts[(i + 1) % n];
+          const distPrev = Math.hypot(curr[0] - prev[0], curr[1] - prev[1]);
+          const distNext = Math.hypot(curr[0] - next[0], curr[1] - next[1]);
+          const rr = Math.min(roundness, distPrev / 2, distNext / 2);
+          const p1 = [
+            curr[0] + ((prev[0] - curr[0]) / distPrev) * rr,
+            curr[1] + ((prev[1] - curr[1]) / distPrev) * rr,
+          ];
+          const p2 = [
+            curr[0] + ((next[0] - curr[0]) / distNext) * rr,
+            curr[1] + ((next[1] - curr[1]) / distNext) * rr,
+          ];
+          d += `${i === 0 ? "M" : "L"} ${p1[0].toFixed(2)} ${p1[1].toFixed(2)} `;
+          d += `Q ${curr[0].toFixed(2)} ${curr[1].toFixed(2)} ${p2[0].toFixed(2)} ${p2[1].toFixed(2)} `;
+        }
+        return d + "Z";
+      }
+
+      function starIconSvg(filled) {
+        const d = roundedStarPath(9, 9, 8, 3.43, 2.9);
+        const inner = filled
+          ? `<path d="${d}" fill="currentColor"/>`
+          : `<path d="${d}" fill="none" stroke="currentColor" stroke-width="1.6"/>`;
+        return `<svg class="star-icon" width="14" height="14" viewBox="0 0 18 18" aria-hidden="true">${inner}</svg>`;
+      }
+
+      function circleMarkerImage(color, applicants, isFav) {
         const w = 56,
           h = 38,
           cx = 28,
@@ -1195,11 +1271,17 @@
         const label = applicants
           ? `<text x="${cx}" y="${cy + 22}" text-anchor="middle" font-family="sans-serif" font-size="12" font-weight="700" fill="#000" stroke="#fff" stroke-width="3" stroke-linejoin="round" paint-order="stroke">${applicants}명</text>`
           : "";
+        const shape = isFav
+          ? `<circle cx="${cx}" cy="${cy}" r="9" fill="#222"/>` +
+            `<circle cx="${cx}" cy="${cy}" r="8.25" fill="#fff"/>` +
+            `<path d="${roundedStarPath(cx, cy, 7.25, 3.1, 2.6)}" fill="${color}"/>`
+          : `<circle cx="${cx}" cy="${cy}" r="9" fill="#222"/>` +
+            `<circle cx="${cx}" cy="${cy}" r="7.5" fill="${color}" stroke="#fff" stroke-width="1.5"/>`;
         const svg =
           `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}">` +
           label +
-          `<circle cx="${cx}" cy="${cy}" r="9" fill="#222"/>` +
-          `<circle cx="${cx}" cy="${cy}" r="7.5" fill="${color}" stroke="#fff" stroke-width="1.5"/></svg>`;
+          shape +
+          `</svg>`;
         return new kakao.maps.MarkerImage(
           "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg),
           new kakao.maps.Size(w, h),
@@ -1207,14 +1289,28 @@
         );
       }
 
+      function refreshMarkerFavImage(marker) {
+        const item = marker._meta;
+        const isFav = favorites.has(item.detail_url);
+        marker._plainImage = circleMarkerImage(marker._color, undefined, isFav);
+        marker._badgeImage = circleMarkerImage(
+          marker._color,
+          item.applicants,
+          isFav,
+        );
+        refreshMarkerImage(marker);
+      }
+
       DATA.listings.forEach((item) => {
         const color = colors[item.house_type] || "#555";
-        const plainImage = circleMarkerImage(color);
-        const badgeImage = circleMarkerImage(color, item.applicants);
+        const isFav = favorites.has(item.detail_url);
+        const plainImage = circleMarkerImage(color, undefined, isFav);
+        const badgeImage = circleMarkerImage(color, item.applicants, isFav);
         const marker = new kakao.maps.Marker({
           position: new kakao.maps.LatLng(item.lat, item.lon),
           image: zoomOk ? badgeImage : plainImage,
         });
+        marker._color = color;
         marker._plainImage = plainImage;
         marker._badgeImage = badgeImage;
         const precLabel = {
@@ -1240,7 +1336,7 @@
     </div>
     <div class="precision-note">위치 정확도: ${precLabel} <span class="badge">${item.sido} ${item.gugun.split(" ").slice(1).join(" ")}</span></div>
     <div class="map-links">
-      <button type="button" class="fav-btn${isFav ? " active" : ""}" data-url="${encodeURIComponent(item.detail_url)}" onclick="toggleFavorite(this)">${isFav ? "★ 즐겨찾기 해제" : "☆ 즐겨찾기 추가"}</button>
+      <button type="button" class="fav-btn${isFav ? " active" : ""}" data-url="${encodeURIComponent(item.detail_url)}" onclick="toggleFavorite(this)">${starIconSvg(isFav)} ${isFav ? "즐겨찾기 해제" : "즐겨찾기 추가"}</button>
       <a class="navermap-btn" href="https://map.naver.com/p/search/${encodeURIComponent(item.addr)}" target="_blank" rel="noopener">네이버 지도</a>
       <button type="button" class="roadview-btn-mobile" onclick="openRoadview(${item.lat}, ${item.lon}, '${encodeURIComponent(item.addr)}')">카카오 로드뷰</button>
     </div>
@@ -1273,7 +1369,8 @@
         if (
           !document.getElementById("map").contains(e.target) &&
           !e.target.closest("#floorplanOverlay") &&
-          !e.target.closest("#roadviewOverlay")
+          !e.target.closest("#roadviewOverlay") &&
+          !e.target.closest("#listViewOverlay")
         )
           infowindow.close();
       });
@@ -1535,12 +1632,14 @@
         updateSortHeaderIndicators();
         const tbody = document.getElementById("listTableBody");
         if (sorted.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="8"><div id="listViewEmpty">조건에 맞는 매물이 없습니다.</div></td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="9"><div id="listViewEmpty">조건에 맞는 매물이 없습니다.</div></td></tr>`;
           return;
         }
         tbody.innerHTML = sorted
-          .map(
-            (it) => `<tr data-url="${encodeURIComponent(it.detail_url)}">
+          .map((it) => {
+            const isFav = favorites.has(it.detail_url);
+            return `<tr data-url="${encodeURIComponent(it.detail_url)}">
+    <td><button type="button" class="list-fav-btn${isFav ? " active" : ""}" data-url="${encodeURIComponent(it.detail_url)}" aria-label="${isFav ? "즐겨찾기 해제" : "즐겨찾기 추가"}" onclick="event.stopPropagation(); toggleFavorite(this)">${starIconSvg(isFav)}</button></td>
     <td>${
       it.floorplan
         ? `<img class="list-thumb" src="${it.floorplan}" alt="내부 구조 도면" title="클릭하여 확대" loading="lazy" onclick="event.stopPropagation(); openFloorplan(this.src)">`
@@ -1553,8 +1652,8 @@
     <td>${it.floor_label ?? "-"}</td>
     <td>${it.applicants}명</td>
     <td>${it.build_year_label ?? "-"}</td>
-  </tr>`,
-          )
+  </tr>`;
+          })
           .join("");
         tbody.querySelectorAll("tr").forEach((el) => {
           el.addEventListener("click", () => {
