@@ -247,16 +247,30 @@
       #map div[style*="border: 1px solid rgb(118, 129, 168)"] {
         border: none !important;
       }
-      .popup-title {
-        font-weight: 700;
-        font-size: 13.5px;
+      .popup-title-row {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 8px;
         margin-bottom: 8px;
         padding-bottom: 8px;
         border-bottom: 1px solid hsl(var(--border));
+      }
+      .popup-title {
+        font-weight: 700;
+        font-size: 13.5px;
         cursor: pointer;
+        flex: 1;
+        min-width: 0;
       }
       .popup-title:hover {
         color: hsl(222.2 89% 55%);
+      }
+      .popup-title-row .fav-btn {
+        width: 26px;
+        height: 26px;
+        padding: 0;
+        flex-shrink: 0;
       }
       .popup-floorplan {
         display: block;
@@ -450,6 +464,7 @@
       }
       .popup-link {
         display: block;
+        flex: 1;
         text-align: center;
         font-size: 12.5px;
         font-weight: 600;
@@ -458,7 +473,6 @@
         text-decoration: none;
         border-radius: calc(var(--radius) - 4px);
         padding: 9px 0;
-        margin-top: 6px;
         transition: opacity 0.15s;
       }
       .popup-link:hover {
@@ -472,12 +486,18 @@
         gap: 6px;
         margin-top: 6px;
       }
+      .apply-row {
+        display: flex;
+        gap: 6px;
+        margin-top: 6px;
+      }
       .navermap-btn {
         flex: 1;
         display: block;
         text-align: center;
         font-size: 12.5px;
-        font-weight: 600;
+        font-weight: 500;
+        white-space: nowrap;
         text-decoration: none;
         border-radius: calc(var(--radius) - 4px);
         padding: 9px 0;
@@ -493,7 +513,8 @@
         flex: 1;
         text-align: center;
         font-size: 12.5px;
-        font-weight: 600;
+        font-weight: 500;
+        white-space: nowrap;
         border: none;
         font: inherit;
         cursor: pointer;
@@ -510,11 +531,11 @@
         vertical-align: -2px;
       }
       .fav-btn {
-        display: block;
-        flex: 1;
-        text-align: center;
-        font-size: 12.5px;
-        font-weight: 600;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 auto;
+        width: 36px;
         border: 1px solid hsl(var(--border));
         background: hsl(var(--background));
         color: hsl(var(--foreground));
@@ -849,6 +870,16 @@
           height: 100vh;
           max-width: 100vw;
           border-radius: 0;
+        }
+        #listViewHeader {
+          padding-top: 24px;
+        }
+        #listTable {
+          font-size: 12px;
+        }
+        #listTable th,
+        #listTable td {
+          white-space: nowrap;
         }
       }
     </style>
@@ -1215,9 +1246,10 @@
         if (willFav) favorites.add(url);
         else favorites.delete(url);
         el.classList.toggle("active", willFav);
-        el.innerHTML = el.classList.contains("list-fav-btn")
-          ? starIconSvg(willFav)
-          : `${starIconSvg(willFav)} ${willFav ? "즐겨찾기 해제" : "즐겨찾기 추가"}`;
+        el.innerHTML = starIconSvg(willFav);
+        if (el.classList.contains("fav-btn")) {
+          el.setAttribute("aria-label", willFav ? "즐겨찾기 해제" : "즐겨찾기 추가");
+        }
         saveFavorites();
         updateFavCount();
         const marker = markerByUrl.get(url);
@@ -1320,8 +1352,13 @@
         }[item.geo_precision];
         const buildContent = () => {
           const isFav = favorites.has(item.detail_url);
+          const isDesktop = window.matchMedia("(min-width: 769px)").matches;
+          const favBtnHtml = `<button type="button" class="fav-btn${isFav ? " active" : ""}" data-url="${encodeURIComponent(item.detail_url)}" aria-label="${isFav ? "즐겨찾기 해제" : "즐겨찾기 추가"}" onclick="event.stopPropagation(); toggleFavorite(this)">${starIconSvg(isFav)}</button>`;
           return `<div class="iw-content has-roadview${item.floorplan ? " has-floorplan" : ""}">
+    <div class="popup-title-row">
     <div class="popup-title" data-addr="${encodeURIComponent(item.addr)}" onclick="copyAddress(this)" title="클릭하여 주소 복사">${item.addr}</div>
+    ${isDesktop ? favBtnHtml : ""}
+    </div>
     <div class="iw-cols">
     <div class="iw-info">
     <div class="popup-body">
@@ -1336,11 +1373,13 @@
     </div>
     <div class="precision-note">위치 정확도: ${precLabel} <span class="badge">${item.sido} ${item.gugun.split(" ").slice(1).join(" ")}</span></div>
     <div class="map-links">
-      <button type="button" class="fav-btn${isFav ? " active" : ""}" data-url="${encodeURIComponent(item.detail_url)}" onclick="toggleFavorite(this)">${starIconSvg(isFav)} ${isFav ? "즐겨찾기 해제" : "즐겨찾기 추가"}</button>
       <a class="navermap-btn" href="https://map.naver.com/p/search/${encodeURIComponent(item.addr)}" target="_blank" rel="noopener">네이버 지도</a>
       <button type="button" class="roadview-btn-mobile" onclick="openRoadview(${item.lat}, ${item.lon}, '${encodeURIComponent(item.addr)}')">카카오 로드뷰</button>
     </div>
-    <a class="popup-link" href="${item.detail_url}" target="_blank" rel="noopener">입주 신청하기</a>
+    <div class="apply-row">
+      ${isDesktop ? "" : favBtnHtml}
+      <a class="popup-link" href="${item.detail_url}" target="_blank" rel="noopener">입주 신청하기</a>
+    </div>
     </div>
     ${item.floorplan ? `<div class="iw-plan"><img class="popup-floorplan" src="${item.floorplan}" alt="내부 구조 도면" title="클릭하여 확대" loading="lazy" onclick="openFloorplan(this.src)"></div>` : ""}
     <div class="iw-roadview">
@@ -1628,7 +1667,7 @@
       function renderListView() {
         const sorted = sortFilteredItems(filteredItems);
         document.getElementById("listViewTitle").textContent =
-          `필터 결과 ${sorted.length}건`;
+          `총 ${sorted.length}건`;
         updateSortHeaderIndicators();
         const tbody = document.getElementById("listTableBody");
         if (sorted.length === 0) {
